@@ -2,6 +2,7 @@ package mirror_test
 
 import (
 	"testing"
+	"time"
 
 	"qlova.org/mirror"
 	"qlova.org/should"
@@ -37,4 +38,15 @@ func Test_Mirror(t *testing.T) {
 	should.Be(".A")(get.Path(NestedStructure.A)).Test(t)
 	should.Be(".B")(get.Path(NestedStructure.B)).Test(t)
 	should.Be(".B.C")(get.Path(NestedStructure.B.C)).Test(t)
+
+	var IgnoreUnsupported struct {
+		A int
+		B string
+
+		C time.Time `mirror:"ignore"`
+	}
+	get.Reflect(&IgnoreUnsupported)
+
+	should.Be("A")(get.Field(IgnoreUnsupported.A).Name).Test(t)
+	should.Be("B")(get.Field(IgnoreUnsupported.B).Name).Test(t)
 }

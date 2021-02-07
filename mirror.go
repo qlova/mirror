@@ -78,6 +78,9 @@ func (t *Type) serialise(parent int, offset int, value reflect.Value) key {
 		//caclulate children.
 		for i := 0; i < rtype.NumField(); i++ {
 			field := rtype.Field(i)
+			if field.Tag.Get("mirror") == "ignore" {
+				continue
+			}
 
 			index := len(t.list)
 			t.list = append(t.list, Field{field, parent})
@@ -116,6 +119,9 @@ func (t *Type) Reflect(value interface{}) {
 	rtype := rvalue.Type()
 	for i := 0; i < rtype.NumField(); i++ {
 		field := rtype.Field(i)
+		if field.Tag.Get("mirror") == "ignore" {
+			continue
+		}
 
 		index := len(t.list)
 		t.list = append(t.list, Field{field, -1})
