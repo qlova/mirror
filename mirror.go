@@ -78,7 +78,7 @@ func (t *Type) serialise(parent int, offset int, value reflect.Value) key {
 		//caclulate children.
 		for i := 0; i < rtype.NumField(); i++ {
 			field := rtype.Field(i)
-			if field.Tag.Get("mirror") == "ignore" {
+			if field.Tag.Get("mirror") == "ignore" || field.PkgPath != "" {
 				continue
 			}
 
@@ -119,7 +119,7 @@ func (t *Type) Reflect(value interface{}) {
 	rtype := rvalue.Type()
 	for i := 0; i < rtype.NumField(); i++ {
 		field := rtype.Field(i)
-		if field.Tag.Get("mirror") == "ignore" {
+		if field.Tag.Get("mirror") == "ignore" || field.PkgPath != "" {
 			continue
 		}
 

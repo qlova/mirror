@@ -44,6 +44,7 @@ func Test_Mirror(t *testing.T) {
 		B string
 
 		C time.Time `mirror:"ignore"`
+		d time.Time
 	}
 	get.Reflect(&IgnoreUnsupported)
 
