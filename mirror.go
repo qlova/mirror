@@ -40,11 +40,33 @@ func (t *Type) deserialize(value reflect.Value) (k key) {
 	//Deserialize the offset out of the type.
 	switch rtype.Kind() {
 
-	case reflect.String:
-		k.offset, _ = strconv.Atoi(value.String())
+	case reflect.Bool:
+		if value.Bool() {
+			k.offset = 1
+		}
+		k.offset = 0
 
 	case reflect.Int:
 		k.offset = int(value.Int())
+
+	case reflect.Int8:
+		//Take advantage of the entire int8 range.
+		k.offset = int(value.Int() + 128)
+
+	case reflect.Int16, reflect.Int32, reflect.Int64:
+		k.offset = int(value.Int())
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		k.offset = int(value.Uint())
+
+	case reflect.Float32, reflect.Float64:
+		k.offset = int(value.Float())
+
+	case reflect.Complex64, reflect.Complex128:
+		k.offset = int(real(value.Complex()))
+
+	case reflect.String:
+		k.offset, _ = strconv.Atoi(value.String())
 
 	case reflect.Struct:
 		k.offset = 0
@@ -53,7 +75,7 @@ func (t *Type) deserialize(value reflect.Value) (k key) {
 		}
 
 	default:
-		panic("mirror.Type.Field unsupported struct-field type: " + rtype.String())
+		panic("mirror.Type.Field unsupported struct-field type: " + rtype.String() + `, please ignore this field with a mirror:"ignore" struct tag`)
 	}
 
 	return
@@ -66,13 +88,37 @@ func (t *Type) serialise(parent int, offset int, value reflect.Value) key {
 	//Serialise the offset into the type somehow.
 	switch value.Type().Kind() {
 
-	case reflect.String:
-		//convert offset to string representation.
-		value.SetString(fmt.Sprint(offset))
+	case reflect.Bool:
+		//boolean can only store 2 fields. ouch.
+		//TODO perhaps we can read/write the boolean as a byte.
+		if offset > 1 {
+			panic(`mirror: only two boolean fields can be reflected by the mirror, please ignore any additional fields with a mirror:"ignore" struct tag`)
+		}
+		value.SetBool(offset == 1)
 
 	case reflect.Int:
 		//store offset directly as an int.
 		value.SetInt(int64(offset))
+
+	case reflect.Int8:
+		//Take advantage of the entire int8 range.
+		value.SetInt(int64(offset - 128))
+
+	case reflect.Int16, reflect.Int32, reflect.Int64:
+		value.SetInt(int64(offset))
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		value.SetUint(uint64(offset))
+
+	case reflect.Float32, reflect.Float64:
+		value.SetFloat(float64(offset))
+
+	case reflect.Complex64, reflect.Complex128:
+		value.SetComplex(complex(float64(offset), 0))
+
+	case reflect.String:
+		//convert offset to string representation.
+		value.SetString(fmt.Sprint(offset))
 
 	case reflect.Struct:
 		//caclulate children.
@@ -93,7 +139,7 @@ func (t *Type) serialise(parent int, offset int, value reflect.Value) key {
 			t.maps[t.serialise(index, offset, value.Field(i))] = index
 		}
 	default:
-		panic("mirror: unsupported struct-field type " + value.Type().String())
+		panic("mirror: unsupported struct-field type " + value.Type().String() + `, please ignore this field with a mirror:"ignore" struct tag`)
 	}
 
 	if group != "" {
